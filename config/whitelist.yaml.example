@@ -1,0 +1,12 @@
+# Gmail Safety Whitelist
+# Recipients NOT in this list will be blocked when SHADOW_MODE=false
+# When SHADOW_MODE=true, all non-whitelisted recipients are shadowed to draft
+
+allowed_recipients:
+  # Examples:
+  # - cliffyan@outlook.com
+  # - chaofan.yan@insead.edu
+
+  # Add your approved email addresses below, one per line.
+  # Lines starting with # are comments.
+  # Keep this file in config/ directory (gitignored).

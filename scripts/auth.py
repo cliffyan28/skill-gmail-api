@@ -1,50 +1,55 @@
-"""OAuth 2.0 authentication for Gmail API."""
+"""OAuth 2.0 authentication for Gmail API via env vars."""
 
 import os
-import json
-from pathlib import Path
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 
-SKILL_DIR = Path(__file__).parent.parent  # skill-gmail-api/
-CREDENTIALS_FILE = SKILL_DIR / "credentials.json"
-TOKEN_FILE = SKILL_DIR / "token.json"
-
+# Strictly only these 3 scopes — no gmail.modify, no gmail.settings.basic
 SCOPES = [
     "https://www.googleapis.com/auth/gmail.readonly",
     "https://www.googleapis.com/auth/gmail.compose",
     "https://www.googleapis.com/auth/gmail.send",
-    "https://www.googleapis.com/auth/gmail.modify",
-    "https://www.googleapis.com/auth/gmail.settings.basic",
-    # Uncomment for permanent delete (full mailbox access):
-    # "https://mail.google.com/",
 ]
+
+# Env vars — must be set before use
+REFRESH_TOKEN = os.environ.get("GMAIL_REFRESH_TOKEN")
+CLIENT_ID = os.environ.get("GMAIL_CLIENT_ID")
+CLIENT_SECRET = os.environ.get("GMAIL_CLIENT_SECRET")
+
+
+def require_env(name: str) -> str:
+    """Get env var or raise clear error."""
+    val = os.environ.get(name)
+    if not val:
+        raise RuntimeError(f"Missing required env var: {name}")
+    return val
+
+
+def build_credentials():
+    """Build Credentials from env vars (no file-based OAuth)."""
+    refresh_token = require_env("GMAIL_REFRESH_TOKEN")
+    client_id = require_env("GMAIL_CLIENT_ID")
+    client_secret = require_env("GMAIL_CLIENT_SECRET")
+
+    creds = Credentials(
+        token=None,
+        refresh_token=refresh_token,
+        client_id=client_id,
+        client_secret=client_secret,
+        token_uri="https://oauth2.googleapis.com/token",
+        scopes=SCOPES,
+    )
+    return creds
 
 
 def get_credentials() -> Credentials:
-    """Get valid credentials, refreshing or re-authenticating as needed."""
-    creds = None
-    
-    if TOKEN_FILE.exists():
-        creds = Credentials.from_authorized_user_file(str(TOKEN_FILE), SCOPES)
-    
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            if not CREDENTIALS_FILE.exists():
-                raise FileNotFoundError(
-                    f"Missing {CREDENTIALS_FILE}\n"
-                    "Download OAuth credentials from Google Cloud Console and save there."
-                )
-            flow = InstalledAppFlow.from_client_secrets_file(str(CREDENTIALS_FILE), SCOPES)
-            creds = flow.run_local_server(port=0)
-        
-        with open(TOKEN_FILE, "w") as f:
-            f.write(creds.to_json())
-    
+    """Get valid credentials, refreshing as needed."""
+    creds = build_credentials()
+
+    if not creds.valid:
+        creds.refresh(Request())
+
     return creds
 
 

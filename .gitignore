@@ -1,0 +1,23 @@
+# Credentials - NEVER commit
+credentials.json
+token.json
+
+# Environment variables (contain secrets)
+.env
+.env.local
+
+# Audit logs - keep but don't commit sensitive content
+logs/
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
